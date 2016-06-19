@@ -3,63 +3,33 @@ import java.io.*;
 import java.awt.geom.*;
 import java.math.*;
 
-public class D {
+public class D2 {
 
-	static final Scanner in = new Scanner(System.in);
+	static final Reader in = new Reader();
 	static final PrintWriter out = new PrintWriter(System.out,false);
 	static boolean debug = false;
 
-	static int[] ans;
-
-	static int kruskal(int[] s, int[] t, int[] cost, int n, int[][] h, int q) {
-		DisjointSet ds = new DisjointSet(n);
-		int e = s.length;
-		int[][] edge = new int[e][2];
-		for (int i=0; i<e; i++) {
-			edge[i][0] = cost[i];
-			edge[i][1] = i;
-		}
-
-		int res = 0, pos = 0;
-
-		Arrays.sort(edge, new Comparator<int[]>(){
-			public int compare(int[] a, int[] b) {
-				return b[0] - a[0];
-			}
-		});
-		for (int i=0; i<e; i++) {
-			int cur = edge[i][1];
-			if (!ds.same(s[cur],t[cur])) {
-				while (pos < q && h[pos][1] >= cost[cur]) {
-					ans[h[pos][2]] = ds.cnt[ds.find(h[pos][0])];
-					pos++;
-				}
-
-				ds.unite(s[cur],t[cur]);
-				res += cost[cur];
-			}
-		}
-
-		while (pos < q) {
-			ans[h[pos][2]] = ds.cnt[ds.find(h[pos][0])];
-			pos++;
-		}
-
-		return res;
-	}
-
-	static void solve() {
+		static void solve() {
 		int n = in.nextInt();
 		int m = in.nextInt();
 
 		int[] a = new int[m];
 		int[] b = new int[m];
 		int[] y = new int[m];
+		int[][] edge = new int[m][2];
 		for (int i=0; i<m; i++) {
 			a[i] = in.nextInt() - 1;
 			b[i] = in.nextInt() - 1;
 			y[i] = in.nextInt();
+			edge[i][0] = y[i];
+			edge[i][1] = i;
 		}
+
+		Arrays.sort(edge, new Comparator<int[]>(){
+			public int compare(int[] a, int[] b) {
+				return b[0] - a[0];
+			}
+		});
 
 		int q = in.nextInt();
 
@@ -78,15 +48,37 @@ public class D {
 		});
 
 
-		ans = new int[q];
-		kruskal(a, b, y, n, h, q);
+		int[] ans = new int[q];
+		int res = 0, pos = 0;
+
+		DisjointSet ds = new DisjointSet(n);
+
+		for (int i=0; i<m; i++) {
+			int cur = edge[i][1];
+			if (!ds.same(a[cur],b[cur])) {
+				while (pos < q && h[pos][1] >= y[cur]) {
+					ans[h[pos][2]] = ds.size(h[pos][0]);
+					pos++;
+				}
+
+				ds.unite(a[cur],b[cur]);
+				res += y[cur];
+			}
+		}
+
+		while (pos < q) {
+			ans[h[pos][2]] = ds.size(h[pos][0]);
+			pos++;
+		}
+
+		dump(ds.cnt);
 
 		for (int i=0; i<q; i++) {
 			out.println(ans[i]);
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		debug = args.length > 0;
 		long start = System.nanoTime();
 
@@ -102,46 +94,146 @@ public class D {
 	static void dump(Object... o) { if (debug) System.err.println(Arrays.deepToString(o)); }
 }
 
+class Reader {
+	private final InputStream in;
+	private final byte[] buf = new byte[1024];
+	private int ptr = 0;
+	private int buflen = 0;
+
+	public Reader() { this(System.in);}
+	public Reader(InputStream source) { this.in = source;}
+
+	private boolean hasNextByte() {
+		if (ptr < buflen) return true;
+		ptr = 0;
+		try{
+			buflen = in.read(buf);
+		}catch (IOException e) {e.printStackTrace();}
+		if (buflen <= 0) return false;
+		return true;
+	}
+
+	private int readByte() { if (hasNextByte()) return buf[ptr++]; else return -1;}
+
+	private boolean isPrintableChar(int c) { return 33 <= c && c <= 126;}
+
+	private void skip() { while(hasNextByte() && !isPrintableChar(buf[ptr])) ptr++;}
+
+	public boolean hasNext() {skip(); return hasNextByte();}
+
+	public String next() {
+		if (!hasNext()) throw new NoSuchElementException();
+		StringBuilder sb = new StringBuilder();
+		int b = readByte();
+		while (isPrintableChar(b)) {
+			sb.appendCodePoint(b);
+			b = readByte();
+		}
+		return sb.toString();
+	}
+
+	public long nextLong() {
+		if (!hasNext()) throw new NoSuchElementException();
+		boolean minus = false;
+		long num = readByte();
+
+		if(num == '-'){
+			num = 0;
+			minus = true;
+		}else if (num < '0' || '9' < num){
+			throw new NumberFormatException();
+		}else{
+			num -= '0';
+		}
+
+		while(true){
+			int b = readByte();
+			if('0' <= b && b <= '9')
+				num = num * 10 + (b - '0');
+			else if(b == -1 || !isPrintableChar(b))
+				return minus ? -num : num;
+			else
+				throw new NoSuchElementException();
+		}
+	}
+
+	public int nextInt() {
+		long num = nextLong();
+		if (num < Integer.MIN_VALUE || Integer.MAX_VALUE < num)
+			throw new NumberFormatException();
+		return (int)num;
+	}
+
+	public double nextDouble() {
+		return Double.parseDouble(next());
+	}
+
+	public char nextChar() {
+		if (!hasNext()) throw new NoSuchElementException();
+		return (char)readByte();
+	}
+
+	public String nextLine() {
+		while (hasNextByte() && (buf[ptr] == '\n' || buf[ptr] == '\r')) ptr++;
+		if (!hasNextByte()) throw new NoSuchElementException();
+
+		StringBuilder sb = new StringBuilder();
+		int b = readByte();
+		while (b != '\n' && b != '\r' && b != -1) {
+			sb.appendCodePoint(b);
+			b = readByte();
+		}
+
+		return sb.toString();
+	}
+
+	public int[] nextIntArray(int n) {
+		int[] res = new int[n];
+		for (int i=0; i<n; i++) res[i] = nextInt();
+		return res;
+	}
+
+	public char[] nextCharArray(int n) {
+		char[] res = new char[n];
+		for (int i=0; i<n; i++) res[i] = nextChar();
+		return res;
+	}
+
+	public void close() {try{ in.close();}catch(IOException e){ e.printStackTrace();}};
+}
+
 class DisjointSet {
-	int[] data;
-	int[] cnt;
+	int[] par, cnt;
 
 	public DisjointSet(int n){
-		data = new int[n];
+		par = new int[n];
 		cnt = new int[n];
 		for (int i=0; i<n; i++) {
-			data[i] = i;
+			par[i] = i;
 			cnt[i] = 1;
 		}
 	}
 
 	public int find(int x){
-		if(data[x] == x) return x;
-		int t = find(data[x]);
-		data[x] = t;
-		cnt[x] = Math.max(cnt[x], cnt[t]);
-		cnt[t] = Math.max(cnt[x], cnt[t]);
-		return data[x];
+		return par[x] == x ? x : (par[x] = find(par[x]));
 	}
 
-	public boolean same(int x,int y){
+	public boolean same(int x, int y){
 		return find(x) == find(y);
 	}
 
-	public void unite(int x,int y){
-		int a = cnt[x];
-		int b = cnt[y];
-		cnt[x] += b;
-		cnt[y] += a;
+	public void unite(int x, int y){
+		x = find(x); y = find(y);
+		if (x == y) return;
+		cnt[x] = cnt[y] = cnt[x] + cnt[y];
+		par[x] = y;
+	}
 
-		int t = find(x);
-		int s = find(y);
-		data[t] = s;
-		cnt[t] = Math.max(cnt[t], cnt[s]);
-		cnt[s] = Math.max(cnt[t], cnt[s]);
+	public int size(int x) {
+		return cnt[find(x)];
 	}
 
 	public String toString() {
-		return Arrays.toString(data);
+		return Arrays.toString(par);
 	}
 }
